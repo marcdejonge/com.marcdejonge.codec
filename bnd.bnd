@@ -1,0 +1,5 @@
+Export-Package: com.marcdejonge.codec*
+
+Bundle-Version: 0.1.0.${tstamp}
+
+-testpath: junit__junit, org.hamcrest__hamcrest-core
