@@ -358,6 +358,12 @@ public class MixedList extends ArrayList<Object> {
 		Object value = getOrNull(ix);
 		if (value instanceof Number) {
 			return (Number) value;
+		} else if (value instanceof CharSequence) {
+			try {
+				return new BigDecimal(value.toString());
+			} catch (NumberFormatException ex) {
+				return dflt;
+			}
 		} else {
 			return dflt;
 		}
@@ -660,6 +666,78 @@ public class MixedList extends ArrayList<Object> {
 		} else {
 			return dflt;
 		}
+	}
+
+	/**
+	 * A {@link ListIterator} is an interal implementation to walk through this list for type values. The implementation
+	 * of this iterator should implement the {@link #getValue(int)} method to create the real translation.
+	 *
+	 * @author Marc de Jonge (marcdejonge@gmail.com)
+	 *
+	 * @param <T>
+	 *            The type of objects that we should return.
+	 */
+	private abstract class ListIterator<T> implements Iterator<T> {
+		private int nextIx = 0;
+		private T nextResult = null;
+
+		@Override
+		public boolean hasNext() {
+			while (nextIx < size() && nextResult == null) {
+				nextResult = getValue(nextIx++);
+			}
+			return nextResult != null;
+		}
+
+		protected abstract T getValue(int ix);
+
+		@Override
+		public T next() {
+			if (hasNext()) {
+				return nextResult;
+			} else {
+				throw new IllegalStateException("No more result");
+			}
+		}
+	}
+
+	/**
+	 * @return An {@link Iterable} object that can be used to iterate over this {@link MixedList} getting only
+	 *         {@link MixedMap} types.
+	 */
+	public Iterable<MixedMap> objects() {
+		return () -> new ListIterator<MixedMap>() {
+			@Override
+			protected MixedMap getValue(int ix) {
+				return getMap(ix, null);
+			}
+		};
+	}
+
+	/**
+	 * @return An {@link Iterable} object that can be used to iterate over this {@link MixedList} getting only
+	 *         {@link Number} types.
+	 */
+	public Iterable<Number> numbers() {
+		return () -> new ListIterator<Number>() {
+			@Override
+			protected Number getValue(int ix) {
+				return getNumber(ix, null);
+			}
+		};
+	}
+
+	/**
+	 * @return An {@link Iterable} object that can be used to iterate over this {@link MixedList} getting only
+	 *         {@link String} types.
+	 */
+	public Iterable<String> strings() {
+		return () -> new ListIterator<String>() {
+			@Override
+			protected String getValue(int ix) {
+				return getString(ix, null);
+			}
+		};
 	}
 
 	/**
