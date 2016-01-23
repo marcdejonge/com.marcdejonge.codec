@@ -768,28 +768,39 @@ public class MixedList extends ArrayList<Object> {
 	@Override
 	public String toString() {
 		StringBuilder sb = new StringBuilder();
-		appendTo(sb, "");
+		appendTo(sb, 2);
 		return sb.toString();
 	}
 
-	void appendTo(StringBuilder a, String indent) {
-		a.append(indent).append("[\n");
-		for (Object obj : this) {
+	void appendTo(StringBuilder a, int indent) {
+		a.append("[ ");
+		for (Iterator<Object> it = iterator(); it.hasNext();) {
+			Object obj = it.next();
 			if (obj == null) {
-				a.append(indent).append("  null\n");
+				a.append("null");
 			} else if (obj instanceof MixedList) {
-				((MixedList) obj).appendTo(a, indent + "  ");
+				((MixedList) obj).appendTo(a, indent + 4);
 			} else if (obj instanceof MixedMap) {
-				((MixedMap) obj).appendTo(a, indent + "  ");
+				((MixedMap) obj).appendTo(a, indent + 4);
 			} else {
-				a.append(indent)
-				 .append("  (")
+				a.append("(")
 				 .append(obj.getClass().getSimpleName())
 				 .append(") ")
-				 .append(obj.toString())
-				 .append("\n");
+				 .append(obj.toString());
+			}
+
+			if (it.hasNext()) {
+				a.append(",\n");
+				for (int ix = 0; ix < indent; ix++) {
+					a.append(' ');
+				}
 			}
 		}
-		a.append(indent).append("]");
+
+		a.append("\n");
+		for (int ix = 0; ix < indent - 2; ix++) {
+			a.append(' ');
+		}
+		a.append("]");
 	}
 }
