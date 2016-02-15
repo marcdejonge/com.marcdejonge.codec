@@ -16,12 +16,12 @@ public class JSONDecoder {
 		return parse(new InputStreamReader(input));
 	}
 
-	public static Object parse(Reader reader) throws JSONParseException {
-		return new JSONDecoder(reader).parseValue();
-	}
-
 	public static Object parse(String string) throws JSONParseException {
 		return parse(new StringReader(string));
+	}
+
+	public static Object parse(Reader reader) throws JSONParseException {
+		return new JSONDecoder(reader).parseValue();
 	}
 
 	private final Reader reader;
@@ -38,14 +38,10 @@ public class JSONDecoder {
 		charNumber = 0;
 		c = 0;
 		endOfFile = false;
-
-		// Read the first character and skip all the leading whitespace
-		next();
-		skipWhitespace();
 	}
 
 	public Object parseValue() throws JSONParseException {
-		checkEndOfFile();
+		skipWhitespace();
 
 		switch (c) {
 		case '"':
@@ -78,27 +74,29 @@ public class JSONDecoder {
 	}
 
 	public Number parseNumber() throws JSONParseException {
+		skipWhitespace();
+
 		buffer.setLength(0);
 		if (c == '-') {
 			buffer.append('-');
-			next();
+			next(false);
 		}
 		int integerLength = 0, fractionLength = 0, exponentialLength = 0;
 
 		while (c >= '0' && c <= '9') {
 			buffer.append(c);
 			integerLength++;
-			next();
+			next(true);
 		}
 
 		// Parse the fraction part, if found
 		if (c == '.') {
 			buffer.append('.');
-			next();
+			next(false);
 			while (c >= '0' && c <= '9') {
 				buffer.append(c);
 				fractionLength++;
-				next();
+				next(true);
 			}
 
 			if (fractionLength == 0) {
@@ -109,26 +107,24 @@ public class JSONDecoder {
 		// Parse the exponential part, if found
 		if (c == 'e' || c == 'E') {
 			buffer.append('e');
-			next();
+			next(false);
 			if (c == '-') {
 				buffer.append('-');
-				next();
+				next(false);
 			} else if (c == '+') {
-				next();
+				next(false);
 			}
 
 			while (c >= '0' && c <= '9') {
 				buffer.append(c);
 				exponentialLength++;
-				next();
+				next(true);
 			}
 
 			if (exponentialLength == 0) {
 				throw new JSONParseException("Exponential part started, but no digits found", lineNumber, charNumber);
 			}
 		}
-
-		skipWhitespace();
 
 		if (fractionLength == 0 && exponentialLength == 0) {
 			// Whole number
@@ -151,8 +147,8 @@ public class JSONDecoder {
 	}
 
 	public String parseString() throws JSONParseException {
+		skipWhitespace();
 		consume('"', "start of string");
-		checkEndOfFile();
 
 		buffer.setLength(0);
 		while (true) {
@@ -162,11 +158,10 @@ public class JSONDecoder {
 
 			switch (c) {
 			case '"':
-				next();
-				skipWhitespace();
+				next(true);
 				return buffer.toString();
 			case '\\':
-				next();
+				next(false);
 				switch (c) {
 				case 'b':
 					buffer.append('\b');
@@ -196,8 +191,7 @@ public class JSONDecoder {
 				break;
 			}
 
-			next();
-			checkEndOfFile();
+			next(false);
 		}
 	}
 
@@ -207,7 +201,7 @@ public class JSONDecoder {
 		for (int ix = 0; ix < 4; ix++) {
 			unicode <<= 4;
 
-			next();
+			next(false);
 
 			switch (c) {
 			case '0':
@@ -277,16 +271,16 @@ public class JSONDecoder {
 	}
 
 	public MixedList parseArray() throws JSONParseException {
-		consume('[', "start of array");
 		skipWhitespace();
+		consume('[', "start of array");
 
 		MixedList array = new MixedList();
 		boolean first = true;
 		while (true) {
 			skipWhitespace();
+
 			if (c == ']') {
-				next();
-				skipWhitespace();
+				next(true);
 				return array;
 			} else {
 				if (first) {
@@ -302,15 +296,16 @@ public class JSONDecoder {
 	}
 
 	public MixedMap parseObject() throws JSONParseException {
-		consume('{', "start of object");
 		skipWhitespace();
+		consume('{', "start of object");
 
 		MixedMap object = new MixedMap();
 		boolean first = true;
 		while (true) {
+			skipWhitespace();
+
 			if (c == '}') {
-				next();
-				skipWhitespace();
+				next(true);
 				return object;
 			} else {
 				if (first) {
@@ -324,6 +319,7 @@ public class JSONDecoder {
 				int startChar = charNumber;
 
 				String name = parseString();
+				skipWhitespace();
 				consume(':', "colon");
 				skipWhitespace();
 				Object value = parseValue();
@@ -336,17 +332,17 @@ public class JSONDecoder {
 	}
 
 	public Boolean parseTrue() throws JSONParseException {
-		expectedNext('t', 'r', 'u', 'e');
+		expectedNext("true".toCharArray());
 		return true;
 	}
 
 	public Boolean parseFalse() throws JSONParseException {
-		expectedNext('f', 'a', 'l', 's', 'e');
+		expectedNext("false".toCharArray());
 		return false;
 	}
 
 	public Object parseNull() throws JSONParseException {
-		expectedNext('n', 'u', 'l', 'l');
+		expectedNext("null".toCharArray());
 		return null;
 	}
 
@@ -357,9 +353,9 @@ public class JSONDecoder {
 	}
 
 	private void expectedNext(char... expectedChars) throws JSONParseException {
-		for (char expectedChar : expectedChars) {
-			checkEndOfFile();
-
+		skipWhitespace();
+		for (int ix = 0; ix < expectedChars.length; ix++) {
+			char expectedChar = expectedChars[ix];
 			if (c != expectedChar) {
 				throw new JSONParseException("Unexpected character '"
 				                             + c
@@ -369,9 +365,8 @@ public class JSONDecoder {
 				                             lineNumber,
 				                             charNumber);
 			}
-			next();
+			next(ix == expectedChars.length - 1);
 		}
-		skipWhitespace();
 	}
 
 	private void consume(char expectedChar, String description) throws JSONParseException {
@@ -384,10 +379,10 @@ public class JSONDecoder {
 			                             lineNumber,
 			                             charNumber);
 		}
-		next();
+		next(false);
 	}
 
-	private void next() throws JSONParseException {
+	private void next(boolean allowEof) throws JSONParseException {
 		try {
 			int value = reader.read();
 			charNumber++;
@@ -395,6 +390,11 @@ public class JSONDecoder {
 			if (value < 0) {
 				endOfFile = true;
 				c = 0;
+
+				if (!allowEof) {
+					checkEndOfFile();
+				}
+
 				return;
 			}
 
@@ -409,8 +409,8 @@ public class JSONDecoder {
 	}
 
 	private void skipWhitespace() throws JSONParseException {
-		while (!endOfFile && Character.isWhitespace(c)) {
-			next();
+		while (c == 0 || Character.isWhitespace(c)) {
+			next(false);
 		}
 	}
 }

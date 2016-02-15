@@ -1,6 +1,6 @@
 Export-Package: com.marcdejonge.codec*
 
-Bundle-Version: 0.1.0.${tstamp}
+Bundle-Version: 1.0.0.${buildid}
 Bundle-Name: Codec library
 Bundle-Description: This library provides easy use of several codecs, such as JSON and URL encoding. \
 	It is intended for use with web libraries.

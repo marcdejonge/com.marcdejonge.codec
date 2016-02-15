@@ -1,5 +1,7 @@
 package com.marcdejonge.codec;
 
+import java.io.Reader;
+import java.io.StringReader;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -11,6 +13,9 @@ import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.stream.BaseStream;
+
+import com.marcdejonge.codec.json.JSONDecoder;
+import com.marcdejonge.codec.json.JSONParseException;
 
 /**
  * <p>
@@ -51,6 +56,28 @@ public class MixedMap extends LinkedHashMap<String, Object> {
 		} else {
 			return new MixedMap(value);
 		}
+	}
+
+	/**
+	 * @param string
+	 *            The JSON input
+	 * @return A {@link MixedList} that contains the parsed JSON content
+	 * @throws JSONParseException
+	 *             If the JSON does not describe a valid array
+	 */
+	public static final MixedMap fromJSON(String string) throws JSONParseException {
+		return fromJSON(new StringReader(string));
+	}
+
+	/**
+	 * @param reader
+	 *            The JSON input
+	 * @return A {@link MixedList} that contains the parsed JSON content
+	 * @throws JSONParseException
+	 *             If the JSON does not describe a valid array
+	 */
+	public static final MixedMap fromJSON(Reader reader) throws JSONParseException {
+		return new JSONDecoder(reader).parseObject();
 	}
 
 	/**
@@ -268,6 +295,13 @@ public class MixedMap extends LinkedHashMap<String, Object> {
 		}
 	}
 
+	/**
+	 * @param key
+	 *            The key at which to search for a value
+	 * @return the {@link Number} stored at the given key, possible parsing the string when needed.
+	 * @throws UnexpectedTypeException
+	 *             when the object at the given key is not a {@link Number} or .
+	 */
 	public Number getNumber(String key) throws UnexpectedTypeException {
 		Object value = get(key);
 		if (value instanceof Number) {
@@ -380,7 +414,7 @@ public class MixedMap extends LinkedHashMap<String, Object> {
 		}
 	}
 
-	public MixedList getArray(String key) throws UnexpectedTypeException {
+	public MixedList getList(String key) throws UnexpectedTypeException {
 		Object value = get(key);
 		if (value instanceof Collection) {
 			return MixedList.from(value);
@@ -389,7 +423,7 @@ public class MixedMap extends LinkedHashMap<String, Object> {
 		}
 	}
 
-	public MixedList getArray(String key, MixedList dflt) {
+	public MixedList getList(String key, MixedList dflt) {
 		Object value = get(key);
 		if (value instanceof MixedList) {
 			return (MixedList) value;
@@ -400,14 +434,69 @@ public class MixedMap extends LinkedHashMap<String, Object> {
 		}
 	}
 
-	public MixedMap getObject(String key) throws UnexpectedTypeException {
+	public MixedMap getMap(String key) throws UnexpectedTypeException {
 		return MixedMap.from(get(key));
 	}
 
-	public MixedMap getObject(String key, MixedMap dflt) {
+	public MixedMap getMap(String key, MixedMap dflt) {
 		try {
 			return MixedMap.from(get(key));
 		} catch (UnexpectedTypeException e) {
+			return dflt;
+		}
+	}
+
+	/**
+	 * @param key
+	 *            The key at which to look
+	 * @param clazz
+	 *            The class of the type that you are looking for
+	 * @param <T>
+	 *            The type of object that is expected at this key
+	 * @return the object of type T at the given index
+	 * @throws UnexpectedTypeException
+	 *             when the object at the given key is missing or can not be cast into type T.
+	 */
+	@SuppressWarnings("unchecked")
+	public <T> T getAs(String key, Class<T> clazz) throws UnexpectedTypeException {
+		Object value = get(key);
+		if (value == null) {
+			throw new UnexpectedTypeException("an object of type " + clazz.getSimpleName(), value);
+		} else if (clazz.isAssignableFrom(value.getClass())) {
+			return (T) value;
+		} else if (value instanceof MixedMap) {
+			return ((MixedMap) value).as(clazz);
+		} else {
+			throw new UnexpectedTypeException("an object of type " + clazz.getSimpleName(), value);
+		}
+	}
+
+	/**
+	 * @param key
+	 *            The key at which to look
+	 * @param clazz
+	 *            The class of the type that you are looking for
+	 * @param <T>
+	 *            The type of object that is expected at this key
+	 * @param dflt
+	 *            The default value when nothing can be found
+	 * @return the object of type T at the given key, or the default value if the object is missing or is not of the
+	 *         valid type.
+	 */
+	@SuppressWarnings("unchecked")
+	public <T> T getAs(String key, Class<T> clazz, T dflt) {
+		Object value = get(key);
+		if (value == null) {
+			return dflt;
+		} else if (clazz.isAssignableFrom(value.getClass())) {
+			return (T) value;
+		} else if (value instanceof MixedMap) {
+			try {
+				return ((MixedMap) value).as(clazz);
+			} catch (UnexpectedTypeException e) {
+				return dflt;
+			}
+		} else {
 			return dflt;
 		}
 	}

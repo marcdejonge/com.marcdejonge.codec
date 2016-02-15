@@ -1,6 +1,7 @@
 package com.marcdejonge.test.codec.json;
 
 import java.io.IOException;
+import java.io.StringReader;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 
@@ -123,5 +124,37 @@ public class JSONDecoderTest {
 		} catch (JSONParseException ex) {
 			Assert.assertEquals(expectedMessage, ex.getMessage());
 		}
+	}
+
+	@Test
+	public void testWhitespace() throws IOException, JSONParseException {
+		testCorrect("   \n\t{   \t\t\"test\"  \r \t  : \n\ttrue  }  ", new MixedMap().$("test", true));
+		Assert.assertTrue(dec("  \ntrue").parseTrue());
+		Assert.assertFalse(dec("  \n\t  false").parseFalse());
+		Assert.assertNull(dec("  \rnull").parseNull());
+		Assert.assertEquals(123, dec("  \r123").parseNumber());
+		Assert.assertEquals(1234567890l, dec("  \r\t\n 1234567890").parseNumber());
+	}
+
+	@Test
+	public void testJsonStream() throws IOException, JSONParseException {
+		JSONDecoder dec = dec("truefalse{}null[1,2]{\"bla\":\"test\"}true");
+		Assert.assertEquals(true, dec.parseValue());
+		Assert.assertEquals(false, dec.parseValue());
+		Assert.assertEquals(new MixedMap(), dec.parseValue());
+		Assert.assertEquals(null, dec.parseValue());
+		Assert.assertEquals(new MixedList().$(1, 2), dec.parseValue());
+		Assert.assertEquals(new MixedMap().$("bla", "test"), dec.parseValue());
+		Assert.assertEquals(true, dec.parseValue());
+
+		try {
+			Assert.fail("Expected EOF, but read: " + dec.parseValue());
+		} catch (JSONParseException ex) {
+			Assert.assertEquals("Premature end of file found @ line 1 character 40", ex.getMessage());
+		}
+	}
+
+	private JSONDecoder dec(String json) throws JSONParseException {
+		return new JSONDecoder(new StringReader(json));
 	}
 }

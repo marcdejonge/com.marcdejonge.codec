@@ -639,6 +639,8 @@ public class MixedList extends ArrayList<Object> {
 			throw new UnexpectedTypeException("an object of type " + clazz.getSimpleName(), value);
 		} else if (clazz.isAssignableFrom(value.getClass())) {
 			return (T) value;
+		} else if (value instanceof MixedMap) {
+			return ((MixedMap) value).as(clazz);
 		} else {
 			throw new UnexpectedTypeException("an object of type " + clazz.getSimpleName(), value);
 		}
@@ -657,12 +659,18 @@ public class MixedList extends ArrayList<Object> {
 	 *         valid type.
 	 */
 	@SuppressWarnings("unchecked")
-	public <T> T getAs(int ix, Class<T> clazz, T dflt) throws UnexpectedTypeException {
+	public <T> T getAs(int ix, Class<T> clazz, T dflt) {
 		Object value = getOrNull(ix);
 		if (value == null) {
 			return dflt;
 		} else if (clazz.isAssignableFrom(value.getClass())) {
 			return (T) value;
+		} else if (value instanceof MixedMap) {
+			try {
+				return ((MixedMap) value).as(clazz);
+			} catch (UnexpectedTypeException e) {
+				return dflt;
+			}
 		} else {
 			return dflt;
 		}
