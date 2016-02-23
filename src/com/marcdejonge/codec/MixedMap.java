@@ -457,17 +457,12 @@ public class MixedMap extends LinkedHashMap<String, Object> {
 	 * @throws UnexpectedTypeException
 	 *             when the object at the given key is missing or can not be cast into type T.
 	 */
-	@SuppressWarnings("unchecked")
 	public <T> T getAs(String key, Class<T> clazz) throws UnexpectedTypeException {
-		Object value = get(key);
+		T value = getAs(key, clazz, null);
 		if (value == null) {
 			throw new UnexpectedTypeException("an object of type " + clazz.getSimpleName(), value);
-		} else if (clazz.isAssignableFrom(value.getClass())) {
-			return (T) value;
-		} else if (value instanceof MixedMap) {
-			return ((MixedMap) value).as(clazz);
 		} else {
-			throw new UnexpectedTypeException("an object of type " + clazz.getSimpleName(), value);
+			return value;
 		}
 	}
 
