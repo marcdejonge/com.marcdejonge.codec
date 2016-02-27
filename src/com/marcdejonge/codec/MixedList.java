@@ -18,7 +18,6 @@ import java.util.stream.BaseStream;
 
 import com.marcdejonge.codec.json.JSONDecoder;
 import com.marcdejonge.codec.json.JSONEncoder;
-import com.marcdejonge.codec.json.JSONParseException;
 
 /**
  * <p>
@@ -70,10 +69,10 @@ public class MixedList extends ArrayList<Object> {
 	 * @param string
 	 *            The JSON input
 	 * @return A {@link MixedList} that contains the parsed JSON content
-	 * @throws JSONParseException
+	 * @throws ParseException
 	 *             If the JSON does not describe a valid array
 	 */
-	public static final MixedList fromJSON(String string) throws JSONParseException {
+	public static final MixedList fromJSON(String string) throws ParseException {
 		return fromJSON(new StringReader(string));
 	}
 
@@ -81,10 +80,10 @@ public class MixedList extends ArrayList<Object> {
 	 * @param reader
 	 *            The JSON input
 	 * @return A {@link MixedList} that contains the parsed JSON content
-	 * @throws JSONParseException
+	 * @throws ParseException
 	 *             If the JSON does not describe a valid array
 	 */
-	public static final MixedList fromJSON(Reader reader) throws JSONParseException {
+	public static final MixedList fromJSON(Reader reader) throws ParseException {
 		return new JSONDecoder(reader).parseArray();
 	}
 

@@ -5,17 +5,17 @@ import java.io.StringReader;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 
+import com.marcdejonge.codec.ParseException;
 import com.marcdejonge.codec.MixedList;
 import com.marcdejonge.codec.MixedMap;
 import com.marcdejonge.codec.json.JSONDecoder;
-import com.marcdejonge.codec.json.JSONParseException;
 
 import org.junit.Assert;
 import org.junit.Test;
 
 public class JSONDecoderTest {
 	@Test
-	public void testObjectDecoding() throws JSONParseException {
+	public void testObjectDecoding() throws ParseException {
 		testCorrect("{}", new MixedMap());
 
 		// Number testing, with automatic typing
@@ -89,7 +89,7 @@ public class JSONDecoderTest {
 		testCorrect("{ \"null\" : null }", new MixedMap().$("null", null));
 	}
 
-	private void testCorrect(String json, Object expected) throws JSONParseException {
+	private void testCorrect(String json, Object expected) throws ParseException {
 		Object parsed = JSONDecoder.parse(json);
 		Assert.assertEquals(expected, parsed);
 	}
@@ -121,13 +121,13 @@ public class JSONDecoderTest {
 			            + expectedMessage
 			            + "\", but it didn't, it returned: "
 			            + object);
-		} catch (JSONParseException ex) {
+		} catch (ParseException ex) {
 			Assert.assertEquals(expectedMessage, ex.getMessage());
 		}
 	}
 
 	@Test
-	public void testWhitespace() throws IOException, JSONParseException {
+	public void testWhitespace() throws IOException, ParseException {
 		testCorrect("   \n\t{   \t\t\"test\"  \r \t  : \n\ttrue  }  ", new MixedMap().$("test", true));
 		Assert.assertTrue(dec("  \ntrue").parseTrue());
 		Assert.assertFalse(dec("  \n\t  false").parseFalse());
@@ -137,7 +137,7 @@ public class JSONDecoderTest {
 	}
 
 	@Test
-	public void testJsonStream() throws IOException, JSONParseException {
+	public void testJsonStream() throws IOException, ParseException {
 		JSONDecoder dec = dec("truefalse{}null[1,2]{\"bla\":\"test\"}true");
 		Assert.assertEquals(true, dec.parseValue());
 		Assert.assertEquals(false, dec.parseValue());
@@ -149,12 +149,12 @@ public class JSONDecoderTest {
 
 		try {
 			Assert.fail("Expected EOF, but read: " + dec.parseValue());
-		} catch (JSONParseException ex) {
+		} catch (ParseException ex) {
 			Assert.assertEquals("Premature end of file found @ line 1 character 40", ex.getMessage());
 		}
 	}
 
-	private JSONDecoder dec(String json) throws JSONParseException {
+	private JSONDecoder dec(String json) throws ParseException {
 		return new JSONDecoder(new StringReader(json));
 	}
 }

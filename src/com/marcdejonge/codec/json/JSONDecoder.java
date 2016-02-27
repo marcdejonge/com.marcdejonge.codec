@@ -8,19 +8,20 @@ import java.io.StringReader;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 
+import com.marcdejonge.codec.ParseException;
 import com.marcdejonge.codec.MixedList;
 import com.marcdejonge.codec.MixedMap;
 
 public class JSONDecoder {
-	public static Object parse(InputStream input) throws JSONParseException {
+	public static Object parse(InputStream input) throws ParseException {
 		return parse(new InputStreamReader(input));
 	}
 
-	public static Object parse(String string) throws JSONParseException {
+	public static Object parse(String string) throws ParseException {
 		return parse(new StringReader(string));
 	}
 
-	public static Object parse(Reader reader) throws JSONParseException {
+	public static Object parse(Reader reader) throws ParseException {
 		return new JSONDecoder(reader).parseValue();
 	}
 
@@ -31,7 +32,7 @@ public class JSONDecoder {
 
 	private final StringBuilder buffer = new StringBuilder(512);
 
-	public JSONDecoder(Reader reader) throws JSONParseException {
+	public JSONDecoder(Reader reader) throws ParseException {
 		this.reader = reader;
 
 		lineNumber = 1;
@@ -40,7 +41,7 @@ public class JSONDecoder {
 		endOfFile = false;
 	}
 
-	public Object parseValue() throws JSONParseException {
+	public Object parseValue() throws ParseException {
 		skipWhitespace();
 
 		switch (c) {
@@ -69,11 +70,11 @@ public class JSONDecoder {
 		case 'n':
 			return parseNull();
 		default:
-			throw new JSONParseException("Unexpected character '" + c + "' found", lineNumber, charNumber);
+			throw new ParseException("Unexpected character '" + c + "' found", lineNumber, charNumber);
 		}
 	}
 
-	public Number parseNumber() throws JSONParseException {
+	public Number parseNumber() throws ParseException {
 		skipWhitespace();
 
 		buffer.setLength(0);
@@ -100,7 +101,7 @@ public class JSONDecoder {
 			}
 
 			if (fractionLength == 0) {
-				throw new JSONParseException("Fraction part started, but no digits found", lineNumber, charNumber);
+				throw new ParseException("Fraction part started, but no digits found", lineNumber, charNumber);
 			}
 		}
 
@@ -122,7 +123,7 @@ public class JSONDecoder {
 			}
 
 			if (exponentialLength == 0) {
-				throw new JSONParseException("Exponential part started, but no digits found", lineNumber, charNumber);
+				throw new ParseException("Exponential part started, but no digits found", lineNumber, charNumber);
 			}
 		}
 
@@ -146,14 +147,14 @@ public class JSONDecoder {
 		}
 	}
 
-	public String parseString() throws JSONParseException {
+	public String parseString() throws ParseException {
 		skipWhitespace();
 		consume('"', "start of string");
 
 		buffer.setLength(0);
 		while (true) {
 			if (c < 32 || c == 127) {
-				throw new JSONParseException("Control character in string found", lineNumber, charNumber);
+				throw new ParseException("Control character in string found", lineNumber, charNumber);
 			}
 
 			switch (c) {
@@ -195,7 +196,7 @@ public class JSONDecoder {
 		}
 	}
 
-	private char parseUnicodePoint() throws JSONParseException {
+	private char parseUnicodePoint() throws ParseException {
 		int unicode = 0;
 
 		for (int ix = 0; ix < 4; ix++) {
@@ -259,7 +260,7 @@ public class JSONDecoder {
 				unicode += 15;
 				break;
 			default:
-				throw new JSONParseException("Invalid character for unicode character \'"
+				throw new ParseException("Invalid character for unicode character \'"
 				                             + c
 				                             + "\'",
 				                             lineNumber,
@@ -270,7 +271,7 @@ public class JSONDecoder {
 		return (char) unicode;
 	}
 
-	public MixedList parseArray() throws JSONParseException {
+	public MixedList parseArray() throws ParseException {
 		skipWhitespace();
 		consume('[', "start of array");
 
@@ -295,7 +296,7 @@ public class JSONDecoder {
 		}
 	}
 
-	public MixedMap parseObject() throws JSONParseException {
+	public MixedMap parseObject() throws ParseException {
 		skipWhitespace();
 		consume('{', "start of object");
 
@@ -325,39 +326,39 @@ public class JSONDecoder {
 				Object value = parseValue();
 
 				if (object.put(name, value) != null) {
-					throw new JSONParseException("Duplicate key \"" + name + "\" in object", startLine, startChar);
+					throw new ParseException("Duplicate key \"" + name + "\" in object", startLine, startChar);
 				}
 			}
 		}
 	}
 
-	public Boolean parseTrue() throws JSONParseException {
+	public Boolean parseTrue() throws ParseException {
 		expectedNext("true".toCharArray());
 		return true;
 	}
 
-	public Boolean parseFalse() throws JSONParseException {
+	public Boolean parseFalse() throws ParseException {
 		expectedNext("false".toCharArray());
 		return false;
 	}
 
-	public Object parseNull() throws JSONParseException {
+	public Object parseNull() throws ParseException {
 		expectedNext("null".toCharArray());
 		return null;
 	}
 
-	private void checkEndOfFile() throws JSONParseException {
+	private void checkEndOfFile() throws ParseException {
 		if (endOfFile) {
-			throw new JSONParseException("Premature end of file found", lineNumber, charNumber);
+			throw new ParseException("Premature end of file found", lineNumber, charNumber);
 		}
 	}
 
-	private void expectedNext(char... expectedChars) throws JSONParseException {
+	private void expectedNext(char... expectedChars) throws ParseException {
 		skipWhitespace();
 		for (int ix = 0; ix < expectedChars.length; ix++) {
 			char expectedChar = expectedChars[ix];
 			if (c != expectedChar) {
-				throw new JSONParseException("Unexpected character '"
+				throw new ParseException("Unexpected character '"
 				                             + c
 				                             + "', expected a '"
 				                             + expectedChar
@@ -369,10 +370,10 @@ public class JSONDecoder {
 		}
 	}
 
-	private void consume(char expectedChar, String description) throws JSONParseException {
+	private void consume(char expectedChar, String description) throws ParseException {
 		checkEndOfFile();
 		if (c != expectedChar) {
-			throw new JSONParseException("Unexpected character '"
+			throw new ParseException("Unexpected character '"
 			                             + c
 			                             + "', expected a "
 			                             + description,
@@ -382,7 +383,7 @@ public class JSONDecoder {
 		next(false);
 	}
 
-	private void next(boolean allowEof) throws JSONParseException {
+	private void next(boolean allowEof) throws ParseException {
 		try {
 			int value = reader.read();
 			charNumber++;
@@ -404,11 +405,11 @@ public class JSONDecoder {
 				charNumber = 0;
 			}
 		} catch (IOException ex) {
-			throw new JSONParseException("I/O Error while parsing json", lineNumber, charNumber, ex);
+			throw new ParseException("I/O Error while parsing json", lineNumber, charNumber, ex);
 		}
 	}
 
-	private void skipWhitespace() throws JSONParseException {
+	private void skipWhitespace() throws ParseException {
 		while (c == 0 || Character.isWhitespace(c)) {
 			next(false);
 		}

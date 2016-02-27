@@ -15,7 +15,6 @@ import java.util.Map;
 import java.util.stream.BaseStream;
 
 import com.marcdejonge.codec.json.JSONDecoder;
-import com.marcdejonge.codec.json.JSONParseException;
 
 /**
  * <p>
@@ -62,10 +61,10 @@ public class MixedMap extends LinkedHashMap<String, Object> {
 	 * @param string
 	 *            The JSON input
 	 * @return A {@link MixedList} that contains the parsed JSON content
-	 * @throws JSONParseException
+	 * @throws ParseException
 	 *             If the JSON does not describe a valid array
 	 */
-	public static final MixedMap fromJSON(String string) throws JSONParseException {
+	public static final MixedMap fromJSON(String string) throws ParseException {
 		return fromJSON(new StringReader(string));
 	}
 
@@ -73,10 +72,10 @@ public class MixedMap extends LinkedHashMap<String, Object> {
 	 * @param reader
 	 *            The JSON input
 	 * @return A {@link MixedList} that contains the parsed JSON content
-	 * @throws JSONParseException
+	 * @throws ParseException
 	 *             If the JSON does not describe a valid array
 	 */
-	public static final MixedMap fromJSON(Reader reader) throws JSONParseException {
+	public static final MixedMap fromJSON(Reader reader) throws ParseException {
 		return new JSONDecoder(reader).parseObject();
 	}
 
