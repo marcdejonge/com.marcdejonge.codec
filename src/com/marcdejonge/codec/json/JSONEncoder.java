@@ -125,7 +125,7 @@ public class JSONEncoder {
 
 	private void write(Collection<?> list, int indent) throws IOException {
 		if (pretty) {
-			out.append("[ ");
+			out.append("[");
 			indent += 2;
 		} else {
 			out.append('[');
@@ -144,7 +144,11 @@ public class JSONEncoder {
 			write(object, indent);
 		}
 
-		out.append(']');
+		if (pretty) {
+			out.append(" ]");
+		} else {
+			out.append(']');
+		}
 	}
 
 	private void write(MixedMap object, int indent) throws IOException {
@@ -178,7 +182,11 @@ public class JSONEncoder {
 			write(entry.getValue(), indent + keySize);
 		}
 
-		out.append('}');
+		if (pretty) {
+			out.append(" }");
+		} else {
+			out.append('}');
+		}
 	}
 
 	private void indent(int indent) throws IOException {
