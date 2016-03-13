@@ -1,5 +1,6 @@
 package com.marcdejonge.codec.plist;
 
+import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.Reader;
 import java.text.DateFormat;
@@ -33,14 +34,30 @@ public class PListCodec {
 	private final Document document;
 
 	public PListCodec(Reader reader) throws ParseException {
+		if (!reader.markSupported()) {
+			reader = new BufferedReader(reader);
+		}
+
 		Document document = null;
 		try {
-			DocumentBuilder builder = factory.newDocumentBuilder();
-			document = builder.parse(new InputSource(reader));
+			// Try to find the first XML character, to skip parsing empty results
+			reader.mark(512);
+			int read = 0;
+			while ((read = reader.read()) != '<') {
+				if (read < 0) {
+					break;
+				}
+			}
+
+			if (read >= 0) {
+				reader.reset();
+				DocumentBuilder builder = factory.newDocumentBuilder();
+				document = builder.parse(new InputSource(reader));
+			}
 		} catch (ParserConfigurationException e) {
 			throw new RuntimeException();
 		} catch (SAXException e) {
-			if (!"Unexpected end of document".equals(e.getMessage())) {
+			if (!"Premature end of file.".equals(e.getMessage())) {
 				throw new ParseException(e);
 			}
 		} catch (IOException e) {

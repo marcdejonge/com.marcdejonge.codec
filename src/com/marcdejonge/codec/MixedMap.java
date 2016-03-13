@@ -8,8 +8,8 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.util.Base64;
 import java.util.Collection;
-import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.stream.BaseStream;
@@ -404,7 +404,7 @@ public class MixedMap extends LinkedHashMap<String, Object> {
 		}
 	}
 
-	public String getString(String key, String dflt) throws UnexpectedTypeException {
+	public String getString(String key, String dflt) {
 		Object value = get(key);
 		if (value == null) {
 			return dflt;
@@ -503,9 +503,16 @@ public class MixedMap extends LinkedHashMap<String, Object> {
 	}
 
 	void appendTo(StringBuilder a, int indent) {
-		a.append("{ ");
-		for (Iterator<Map.Entry<String, Object>> it = entrySet().iterator(); it.hasNext();) {
-			Map.Entry<String, Object> entry = it.next();
+		if (isEmpty()) {
+			a.append("{}");
+			return;
+		}
+
+		a.append("{\n");
+		for (java.util.Map.Entry<String, Object> entry : entrySet()) {
+			for (int ix = 0; ix < indent; ix++) {
+				a.append(' ');
+			}
 
 			a.append(entry.getKey()).append(": ");
 			Object obj = entry.getValue();
@@ -515,6 +522,12 @@ public class MixedMap extends LinkedHashMap<String, Object> {
 				((MixedList) obj).appendTo(a, indent + entry.getKey().length() + 4);
 			} else if (obj instanceof MixedMap) {
 				((MixedMap) obj).appendTo(a, indent + entry.getKey().length() + 4);
+			} else if (obj instanceof byte[]) {
+				byte[] data = (byte[]) obj;
+				a.append("(binary data) ");
+				if (data.length < 1024) {
+					a.append(Base64.getEncoder().encodeToString(data));
+				}
 			} else {
 				a.append("(")
 				 .append(obj.getClass().getSimpleName())
@@ -522,15 +535,9 @@ public class MixedMap extends LinkedHashMap<String, Object> {
 				 .append(obj.toString());
 			}
 
-			if (it.hasNext()) {
-				a.append(",\n");
-				for (int ix = 0; ix < indent; ix++) {
-					a.append(' ');
-				}
-			}
+			a.append("\n");
 		}
 
-		a.append("\n");
 		for (int ix = 0; ix < indent - 2; ix++) {
 			a.append(' ');
 		}

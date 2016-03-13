@@ -12,6 +12,12 @@ public class ParseException extends Exception {
 		charNumber = -1;
 	}
 
+	public ParseException(String msg, Throwable cause) {
+		super(msg, cause);
+		lineNumber = -1;
+		charNumber = -1;
+	}
+
 	public ParseException(String message) {
 		this(message, -1, -1);
 	}

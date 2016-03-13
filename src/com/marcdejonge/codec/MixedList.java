@@ -10,6 +10,7 @@ import java.lang.reflect.Modifier;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
@@ -700,10 +701,14 @@ public class MixedList extends ArrayList<Object> {
 
 		@Override
 		public T next() {
-			if (hasNext()) {
-				return nextResult;
-			} else {
-				throw new IllegalStateException("No more result");
+			try {
+				if (hasNext()) {
+					return nextResult;
+				} else {
+					throw new IllegalStateException("No more result");
+				}
+			} finally {
+				nextResult = null;
 			}
 		}
 	}
@@ -780,31 +785,38 @@ public class MixedList extends ArrayList<Object> {
 	}
 
 	void appendTo(StringBuilder a, int indent) {
-		a.append("[ ");
-		for (Iterator<Object> it = iterator(); it.hasNext();) {
-			Object obj = it.next();
+		if (isEmpty()) {
+			a.append("[]");
+			return;
+		}
+
+		a.append("[\n");
+		for (Object obj : this) {
+			for (int ix = 0; ix < indent; ix++) {
+				a.append(' ');
+			}
+
 			if (obj == null) {
 				a.append("null");
 			} else if (obj instanceof MixedList) {
-				((MixedList) obj).appendTo(a, indent + 4);
+				((MixedList) obj).appendTo(a, indent + 2);
 			} else if (obj instanceof MixedMap) {
-				((MixedMap) obj).appendTo(a, indent + 4);
+				((MixedMap) obj).appendTo(a, indent + 2);
+			} else if (obj instanceof byte[]) {
+				byte[] data = (byte[]) obj;
+				a.append("(binary data) ");
+				if (data.length < 1024) {
+					a.append(Base64.getEncoder().encodeToString(data));
+				}
 			} else {
 				a.append("(")
 				 .append(obj.getClass().getSimpleName())
 				 .append(") ")
 				 .append(obj.toString());
 			}
-
-			if (it.hasNext()) {
-				a.append(",\n");
-				for (int ix = 0; ix < indent; ix++) {
-					a.append(' ');
-				}
-			}
+			a.append("\n");
 		}
 
-		a.append("\n");
 		for (int ix = 0; ix < indent - 2; ix++) {
 			a.append(' ');
 		}
